@@ -73,11 +73,15 @@ export const createRouter = (ctx: AppContext) => {
     handler(async (req, res) => {
       const params = new URLSearchParams(req.originalUrl.split('?')[1])
       try {
+        // Store the credentials
         const { session } = await ctx.oauthClient.callback(params)
+
+        // Attach the account DID to our user via a cookie
         const clientSession = await getIronSession<Session>(req, res, {
           cookieName: 'sid',
           password: env.COOKIE_SECRET,
         })
+        
         assert(!clientSession.did, 'session already exists')
         clientSession.did = session.did
         await clientSession.save()
@@ -85,6 +89,8 @@ export const createRouter = (ctx: AppContext) => {
         ctx.logger.error({ err }, 'oauth callback failed')
         return res.redirect('/?error')
       }
+
+      // Send them back to the app
       return res.redirect('/')
     })
   )
